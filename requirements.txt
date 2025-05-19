@@ -1,6 +1,8 @@
 streamlit
 moviepy
-openai-whisper
 pydub
 numpy
+openai-whisper
 torch
+tqdm
+ffmpeg-python
