@@ -1,0 +1,14 @@
+PASSO A PASSO PARA USAR A VERSÃO COM INTERFACE GRÁFICA (Streamlit) - Windows
+
+1. Instale o Python: https://www.python.org/downloads/
+2. Instale o FFmpeg: https://www.gyan.dev/ffmpeg/builds/
+   - Adicione a pasta /bin do FFmpeg à variável de ambiente PATH
+3. Abra o terminal na pasta do projeto
+4. Instale as bibliotecas com:
+   pip install -r requirements.txt streamlit
+5. Execute o app com:
+   streamlit run corte_streamlit.py
+6. O navegador vai abrir a interface gráfica
+7. Faça upload do vídeo e configure os parâmetros
+8. Clique em "Iniciar corte automático"
+9. Veja os cortes gerados na pasta 'cortes'
