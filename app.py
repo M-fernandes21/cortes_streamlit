@@ -1,37 +1,48 @@
-
 import streamlit as st
-from moviepy.editor import VideoFileClip
-import tempfile
+from moviepy.editor import VideoFileClip, concatenate_videoclips
+import whisper
+from pydub import AudioSegment, silence
 
-st.title("Corte de Vídeo Simples com MoviePy + Streamlit")
+st.title("App de Cortes Automáticos com IA")
 
-uploaded_file = st.file_uploader("Envie um vídeo", type=["mp4", "mov", "avi"])
+uploaded_file = st.file_uploader("Envie seu vídeo", type=["mp4", "mov", "avi"])
 
-if uploaded_file is not None:
-    tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-    tfile.write(uploaded_file.read())
-    tfile.close()
+if uploaded_file:
+    with open("temp_video.mp4", "wb") as f:
+        f.write(uploaded_file.getbuffer())
+    st.video("temp_video.mp4")
 
-    clip = VideoFileClip(tfile.name)
-    duration = clip.duration
+    st.info("Carregando modelo Whisper...")
+    model = whisper.load_model("base")
 
-    st.video(tfile.name)
-    st.write(f"Duração do vídeo: {duration:.2f} segundos")
+    st.info("Transcrevendo áudio do vídeo...")
+    result = model.transcribe("temp_video.mp4")
+    st.write("Transcrição:")
+    st.write(result["text"])
 
-    start = st.number_input("Início (segundos)", min_value=0.0, max_value=duration, value=0.0)
-    end = st.number_input("Fim (segundos)", min_value=0.0, max_value=duration, value=duration)
+    audio = AudioSegment.from_file("temp_video.mp4")
+    silences = silence.detect_silence(audio, min_silence_len=700, silence_thresh=-40)
+    silences_sec = [(start/1000, stop/1000) for start, stop in silences]
 
-    if st.button("Cortar vídeo"):
-        if start >= end:
-            st.error("Início deve ser menor que fim!")
-        else:
-            with st.spinner("Processando corte..."):
-                cut_clip = clip.subclip(start, end)
-                output_path = "video_cortado.mp4"
-                cut_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
-                cut_clip.close()
+    st.write("Silêncios detectados (segundos):", silences_sec)
 
-            st.success("Vídeo cortado com sucesso!")
-            st.video(output_path)
+    video = VideoFileClip("temp_video.mp4")
 
-    clip.close()
+    fala_intervals = []
+    start = 0
+    for silence_start, silence_end in silences_sec:
+        fala_intervals.append((start, silence_start))
+        start = silence_end
+    fala_intervals.append((start, video.duration))
+
+    st.write("Intervalos de fala para manter:", fala_intervals)
+
+    clips = [video.subclip(start, end) for start, end in fala_intervals if end > start + 1]
+
+    if clips:
+        final_clip = concatenate_videoclips(clips)
+        final_clip.write_videofile("video_cortado.mp4", codec="libx264")
+        st.success("Vídeo cortado criado!")
+        st.video("video_cortado.mp4")
+    else:
+        st.warning("Vídeo não possui segmentos de fala detectados.")
