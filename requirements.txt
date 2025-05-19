@@ -1,6 +1,6 @@
 streamlit
-moviepy==1.0.3
+moviepy
 pydub
 numpy
-imageio
-imageio-ffmpeg
+openai-whisper
+torch
